@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  resources
+
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  ProjectName:
+    Description: Required.
+    Type: String
+  DefaultRegion:
+    Description: Required.
+    Type: String
+  # KeyPairName:
+  #   Description: Required. KeyPair name
+  #   Type: String
+
+Resources:
+
+  ProjectNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: Project
+      Type: String
+      DataType: text
+      Value: !Ref ProjectName
+
+  DefaultRegionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: DefaultRegion
+      Type: String
+      DataType: text
+      Value: !Ref DefaultRegion
+
+  AccountIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: AccountId
+      Type: String
+      DataType: text
+      Value: !Ref AWS::AccountId
+
+  IsHolidayParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      AllowedPattern: "^(true|false)$"
+      Name: IsHoliday
+      Type: String
+      DataType: text
+      Value: false
+
+  IsWeekendParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      AllowedPattern: "^(true|false)$"
+      Name: IsWeekend
+      Type: String
+      DataType: text
+      Value: false
+
+  DeploysBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-deploys
+      VersioningConfiguration: 
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  
+  SystemKeyValueTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      TableName: System_KeyValue
+      AttributeDefinitions: 
+        - AttributeName: Key
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: Key
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: code-deploy-service-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+  FeriadosChangeCalendarDocument:
+    Type: 'AWS::SSM::Document'
+    Properties:
+      Name: Feriados
+      Content: "BEGIN:VCALENDAR\r\nPRODID:-//AWS//Change Calendar 1.0//EN\r\nVERSION:2.0\r\nX-CALENDAR-TYPE:DEFAULT_OPEN\r\nX-WR-CALDESC:test\r\nEND:VCALENDAR\r\n"
+      DocumentType: ChangeCalendar
+      DocumentFormat: TEXT
+
+Outputs:
+  # EC2KeyPairName:
+  #   Description: Name of the ec2 key value pair
+  #   Value: !Ref KeyPairName
+  #   Export:
+  #     Name: EC2KeyPairName
+  DeploymentBucketName:
+    Description: Deployment bucket name
+    Value: !Ref DeploysBucket
+    Export: 
+      Name: DeploymentBucketName
+  DeploymentBucketArn:
+    Description: Deployment bucket arn
+    Value: !GetAtt DeploysBucket.Arn
+    Export:
+      Name: DeploymentBucketArn
+  CodeDeployServiceRoleArn:
+    Description: CodeDeployServiceRole
+    Value: !GetAtt CodeDeployServiceRole.Arn
+    Export:
+      Name: CodeDeployServiceRoleArn
+  SystemKeyValueTableName:
+    Description: SystemKeyValueTable
+    Value: !Ref SystemKeyValueTable
+    Export:
+      Name: SystemKeyValueTableName
+
