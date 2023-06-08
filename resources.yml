@@ -20,7 +20,7 @@ Resources:
   ProjectNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: Project
+      Name: ProjectName
       Type: String
       DataType: text
       Value: !Ref ProjectName
@@ -40,6 +40,14 @@ Resources:
       Type: String
       DataType: text
       Value: !Ref AWS::AccountId
+
+  DeployBucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: DeployBucket
+      Type: String
+      DataType: text
+      Value: !Ref DeploysBucket
 
   IsHolidayParameter:
     Type: AWS::SSM::Parameter
